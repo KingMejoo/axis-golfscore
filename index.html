@@ -150,7 +150,7 @@ function render() {
     [2, 3, 4].forEach(n => { html += `<button class="${f.count === n ? 'sel' : ''}" onclick="setCount(${n})">${n}명</button>`; });
     html += '</div><label class="label" style="margin-bottom:8px">순위 입력</label>';
     for (let i = 0; i < f.count; i++) {
-      html += `<div class="rank-row"><span>${REMOJI[i + 1]}</span><input type="text" value="${esc(f.rankings[i]?.name || '')}" placeholder="플레이어 이름" oninput="updateRankName(${i},this.value)" list="pl"></div>`;
+      html += `<div class="rank-row"><span>${REMOJI[i + 1]}</span><input type="text" id="rank-input-${i}" value="${esc(f.rankings[i]?.name || '')}" placeholder="플레이어 이름" data-rank-idx="${i}" onblur="commitRankName(${i},this.value)" list="pl"></div>`;
     }
     html += `<datalist id="pl">${ap.map(p => `<option value="${esc(p)}">`).join('')}</datalist>`;
     html += '<p style="font-size:11px;color:#9ca3af;margin-top:4px">위에서부터 1위, 2위, 3위, 4위 순서입니다</p></div>';
@@ -227,6 +227,15 @@ function render() {
   document.getElementById('app').innerHTML = html;
 }
 
+let composing = false;
+document.addEventListener('compositionstart', () => { composing = true; });
+document.addEventListener('compositionend', (e) => {
+  composing = false;
+  if (e.target.dataset.rankIdx !== undefined) {
+    state.form.rankings[Number(e.target.dataset.rankIdx)].name = e.target.value;
+  }
+});
+
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function updateForm(key, val) { state.form[key] = val; render(); }
 function setCount(n) {
@@ -236,9 +245,20 @@ function setCount(n) {
   state.form.rankings = r.slice(0, n).map((x, i) => ({ ...x, rank: i + 1 }));
   render();
 }
-function updateRankName(i, v) { state.form.rankings[i].name = v; render(); }
+function updateRankName(i, v) {
+  state.form.rankings[i].name = v;
+  // 한글 입력 중에는 render하지 않음
+}
+function commitRankName(i, v) {
+  state.form.rankings[i].name = v;
+}
 
 function saveMatch() {
+  // 저장 전 입력 필드에서 최신 값 읽기
+  for (let i = 0; i < state.form.count; i++) {
+    const el = document.getElementById('rank-input-' + i);
+    if (el) state.form.rankings[i].name = el.value;
+  }
   const f = state.form, rankings = f.rankings.slice(0, f.count);
   if (rankings.some(r => !r.name.trim())) return alert("플레이어 이름을 모두 입력해주세요");
   if (new Set(rankings.map(r => r.name.trim())).size !== rankings.length) return alert("플레이어 이름이 중복됩니다");
