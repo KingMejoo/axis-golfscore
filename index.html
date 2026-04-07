@@ -150,9 +150,14 @@ function render() {
     [2, 3, 4].forEach(n => { html += `<button class="${f.count === n ? 'sel' : ''}" onclick="setCount(${n})">${n}명</button>`; });
     html += '</div><label class="label" style="margin-bottom:8px">순위 입력</label>';
     for (let i = 0; i < f.count; i++) {
-      html += `<div class="rank-row"><span>${REMOJI[i + 1]}</span><input type="text" id="rank-input-${i}" value="${esc(f.rankings[i]?.name || '')}" placeholder="플레이어 이름" data-rank-idx="${i}" onblur="commitRankName(${i},this.value)" list="pl"></div>`;
+      html += `<div class="rank-row"><span>${REMOJI[i + 1]}</span><input type="text" id="rank-input-${i}" value="${esc(f.rankings[i]?.name || '')}" placeholder="플레이어 이름" data-rank-idx="${i}" onblur="commitRankName(${i},this.value)" autocomplete="off"></div>`;
     }
-    html += `<datalist id="pl">${ap.map(p => `<option value="${esc(p)}">`).join('')}</datalist>`;
+    if (ap.length) {
+      html += '<div style="margin-top:8px;margin-bottom:4px"><span style="font-size:11px;color:#9ca3af">최근 플레이어:</span><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">';
+      ap.forEach(p => { html += `<button style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:16px;padding:3px 10px;font-size:12px;cursor:pointer;color:#166534" onclick="pickPlayer('${esc(p)}')">${esc(p)}</button>`; });
+      html += '</div></div>';
+    }
+    }
     html += '<p style="font-size:11px;color:#9ca3af;margin-top:4px">위에서부터 1위, 2위, 3위, 4위 순서입니다</p></div>';
     html += `<div style="display:flex;gap:8px"><button class="btn btn-green" style="flex:1" onclick="saveMatch()">${state.editId ? '수정 완료' : '경기 저장'}</button>`;
     if (state.editId) html += `<button class="btn btn-gray" style="flex:0.5" onclick="cancelEdit()">취소</button>`;
@@ -251,6 +256,19 @@ function updateRankName(i, v) {
 }
 function commitRankName(i, v) {
   state.form.rankings[i].name = v;
+}
+
+function pickPlayer(name) {
+  // 비어있는 첫 번째 칸에 자동 입력
+  for (let i = 0; i < state.form.count; i++) {
+    const el = document.getElementById('rank-input-' + i);
+    const current = el ? el.value : state.form.rankings[i].name;
+    if (!current.trim()) {
+      state.form.rankings[i].name = name;
+      if (el) el.value = name;
+      return;
+    }
+  }
 }
 
 function saveMatch() {
