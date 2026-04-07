@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>골프 스코어 관리</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; min-height: 100vh; }
+  #app { max-width: 540px; margin: 0 auto; padding-bottom: 40px; }
+  .header { background: linear-gradient(135deg, #166534, #16a34a); padding: 24px 16px 16px; color: #fff; }
+  .header h1 { font-size: 22px; font-weight: 800; }
+  .header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+  .tabs { display: flex; background: #fff; border-bottom: 1px solid #e5e7eb; overflow-x: auto; }
+  .tabs button { flex: none; padding: 12px 14px; border: none; background: none; font-size: 13px; cursor: pointer; white-space: nowrap; color: #6b7280; border-bottom: 2px solid transparent; }
+  .tabs button.active { color: #16a34a; font-weight: 700; border-bottom-color: #16a34a; }
+  .content { padding: 16px; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  input[type="date"], input[type="text"], input[type="file"] { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; }
+  .label { font-size: 12px; font-weight: 600; color: #6b7280; display: block; margin-bottom: 4px; }
+  .btn { border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-green { background: #16a34a; color: #fff; }
+  .btn-blue { background: #3b82f6; color: #fff; }
+  .btn-gray { background: #6b7280; color: #fff; }
+  .btn-sm { border-radius: 4px; padding: 3px 8px; font-size: 11px; border: none; color: #fff; cursor: pointer; }
+  .count-btns { display: flex; gap: 8px; margin: 4px 0 16px; }
+  .count-btns button { flex: 1; padding: 8px 0; border: 2px solid #d1d5db; border-radius: 8px; background: #fff; font-weight: 600; font-size: 14px; cursor: pointer; color: #6b7280; }
+  .count-btns button.sel { border-color: #16a34a; background: #f0fdf4; color: #16a34a; }
+  .rank-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .rank-row span { font-size: 20px; width: 30px; text-align: center; }
+  .rank-row input { flex: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: center; padding: 8px 4px; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
+  th:first-child { text-align: left; }
+  td { padding: 8px 4px; text-align: center; border-bottom: 1px solid #f3f4f6; }
+  td:first-child { text-align: left; font-weight: 700; }
+  .match-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+  .match-date { width: 90px; font-weight: 600; color: #374151; font-size: 12px; }
+  .match-ranks { flex: 1; display: flex; gap: 4px; flex-wrap: wrap; font-size: 12px; }
+  .match-btns { width: 80px; display: flex; gap: 4px; justify-content: flex-end; }
+  .pager { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; }
+  .pager button { padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; }
+  .pager button:disabled { background: #f3f4f6; color: #9ca3af; cursor: default; }
+  .h2h-card { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .h2h-side { text-align: center; flex: 1; }
+  .h2h-vs { text-align: center; padding: 0 8px; font-size: 12px; color: #6b7280; font-weight: 600; }
+  .bar-wrap { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .bar-track { flex: 1; height: 6px; border-radius: 3px; background: #e5e7eb; overflow: hidden; display: flex; }
+  .subtabs { display: flex; overflow-x: auto; border-bottom: 1px solid #e5e7eb; margin: 8px 0 12px; gap: 0; }
+  .subtabs button { flex: none; padding: 8px 14px; border: none; background: none; font-size: 13px; cursor: pointer; white-space: nowrap; color: #6b7280; border-bottom: 2px solid transparent; }
+  .subtabs button.active { color: #16a34a; font-weight: 700; border-bottom-color: #16a34a; }
+  .modal-bg { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal { background: #fff; border-radius: 16px; padding: 24px; max-width: 320px; width: 100%; text-align: center; }
+  .modal-btns { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-btns button { flex: 1; padding: 10px 0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .empty { text-align: center; color: #9ca3af; padding: 40px 16px; }
+  .file-example { background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px; font-family: monospace; }
+  .error-box { margin-top: 12px; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; font-size: 13px; white-space: pre-wrap; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const STORAGE_KEY = "golf_scores_v3";
+const PER_PAGE = 50;
+const REMOJI = { 1: "🥇", 2: "🥈", 3: "🥉", 4: "4위" };
+
+let state = {
+  data: loadData(),
+  tab: 0, page: 1, editId: null,
+  form: emptyForm(),
+  deleteTarget: null,
+  fileError: "", fileLoading: false, preview: null, importData: [],
+  h2hTab: 0
+};
+
+function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : { matches: [] }; } catch { return { matches: [] }; } }
+function saveData() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data)); } catch {} }
+function emptyForm() { return { date: new Date().toISOString().slice(0, 10), count: 4, rankings: [{ name: "", rank: 1 }, { name: "", rank: 2 }, { name: "", rank: 3 }, { name: "", rank: 4 }] }; }
+function getAllPlayers() { return [...new Set(state.data.matches.flatMap(m => m.rankings.map(r => r.name)))].sort(); }
+function winRate(w, l, d) { const t = w + l + (d || 0); if (!t) return '<span style="color:#9ca3af">-</span>'; const r = ((w / t) * 100).toFixed(0); return `<span style="font-weight:700;color:${r >= 50 ? '#16a34a' : '#ef4444'}">${r}%</span>`; }
+
+function getStats() {
+  const players = getAllPlayers(), s = {};
+  players.forEach(p => { s[p] = { games: 0, r1: 0, r2: 0, r3: 0, r4: 0, wins: 0, losses: 0, draws: 0, totalRank: 0 }; });
+  state.data.matches.forEach(m => {
+    m.rankings.forEach(r => { if (!s[r.name]) return; s[r.name].games++; s[r.name].totalRank += r.rank; s[r.name][`r${r.rank}`]++; });
+    for (let i = 0; i < m.rankings.length; i++) for (let j = i + 1; j < m.rankings.length; j++) {
+      const a = m.rankings[i], b = m.rankings[j]; if (!s[a.name] || !s[b.name]) continue;
+      if (a.rank < b.rank) { s[a.name].wins++; s[b.name].losses++; } else if (a.rank > b.rank) { s[b.name].wins++; s[a.name].losses++; } else { s[a.name].draws++; s[b.name].draws++; }
+    }
+  });
+  return s;
+}
+
+function calcH2H(matches) {
+  const h = {};
+  matches.forEach(m => {
+    for (let i = 0; i < m.rankings.length; i++) for (let j = i + 1; j < m.rankings.length; j++) {
+      const a = m.rankings[i], b = m.rankings[j], key = [a.name, b.name].sort().join("__");
+      if (!h[key]) h[key] = { p1: [a.name, b.name].sort()[0], p2: [a.name, b.name].sort()[1], p1w: 0, p2w: 0, draw: 0 };
+      const w = a.rank < b.rank ? a.name : b.rank < a.rank ? b.name : null;
+      if (!w) h[key].draw++; else if (w === h[key].p1) h[key].p1w++; else h[key].p2w++;
+    }
+  });
+  return Object.values(h);
+}
+
+function set(updates) { Object.assign(state, updates); saveData(); render(); }
+
+function render() {
+  const ap = getAllPlayers(), sorted = state.data.matches.slice().sort((a, b) => b.date.localeCompare(a.date));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  const cp = Math.min(state.page, totalPages);
+  const paged = sorted.slice((cp - 1) * PER_PAGE, cp * PER_PAGE);
+  const stats = getStats();
+  const sp = ap.slice().sort((a, b) => { const ra = stats[a].games ? stats[a].totalRank / stats[a].games : 99; const rb = stats[b].games ? stats[b].totalRank / stats[b].games : 99; return ra - rb; });
+  const h2hAll = calcH2H(state.data.matches);
+  const years = [...new Set(state.data.matches.map(m => m.date?.slice(0, 4)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  const h2hTabs = [...years, "총 전적"];
+  const h2hSel = Math.min(state.h2hTab, h2hTabs.length - 1);
+  const h2hSelLabel = h2hTabs[h2hSel] || "총 전적";
+  const h2hData = h2hSelLabel === "총 전적" ? h2hAll : calcH2H(state.data.matches.filter(m => m.date?.startsWith(h2hSelLabel)));
+  const f = state.form;
+
+  let html = '';
+
+  // Modal
+  if (state.deleteTarget) {
+    const dt = state.deleteTarget;
+    html += `<div class="modal-bg"><div class="modal"><div style="font-size:32px;margin-bottom:8px">🗑️</div><p style="font-size:15px;font-weight:600;margin-bottom:4px">경기를 삭제할까요?</p><p style="font-size:13px;color:#6b7280;margin-bottom:0">${dt.date} 경기가 삭제되며 통계에 반영됩니다.</p><div class="modal-btns"><button style="border:1px solid #d1d5db;background:#fff;color:#374151" onclick="set({deleteTarget:null})">취소</button><button style="border:none;background:#ef4444;color:#fff" onclick="doDelete(${dt.id})">삭제</button></div></div></div>`;
+  }
+
+  // Header
+  html += `<div class="header"><h1>⛳ 골프 스코어 관리</h1><p>경기 ${state.data.matches.length}개 · 플레이어 ${ap.length}명</p></div>`;
+
+  // Tabs
+  const tabNames = ["새 경기", "경기 기록", "승패 통계", "데이터 가져오기"];
+  html += '<div class="tabs">';
+  tabNames.forEach((t, i) => { html += `<button class="${state.tab === i ? 'active' : ''}" onclick="set({tab:${i},page:1})">${t}</button>`; });
+  html += '</div><div class="content">';
+
+  // Tab 0: 새 경기
+  if (state.tab === 0) {
+    html += `<h2 style="font-size:16px;font-weight:700;margin-bottom:16px">${state.editId ? '경기 수정' : '새 경기 등록'}</h2><div class="card">`;
+    html += `<label class="label">날짜</label><input type="date" value="${f.date}" onchange="updateForm('date',this.value)" style="margin-bottom:14px">`;
+    html += `<label class="label">플레이어 수</label><div class="count-btns">`;
+    [2, 3, 4].forEach(n => { html += `<button class="${f.count === n ? 'sel' : ''}" onclick="setCount(${n})">${n}명</button>`; });
+    html += '</div><label class="label" style="margin-bottom:8px">순위 입력</label>';
+    for (let i = 0; i < f.count; i++) {
+      html += `<div class="rank-row"><span>${REMOJI[i + 1]}</span><input type="text" value="${esc(f.rankings[i]?.name || '')}" placeholder="플레이어 이름" oninput="updateRankName(${i},this.value)" list="pl"></div>`;
+    }
+    html += `<datalist id="pl">${ap.map(p => `<option value="${esc(p)}">`).join('')}</datalist>`;
+    html += '<p style="font-size:11px;color:#9ca3af;margin-top:4px">위에서부터 1위, 2위, 3위, 4위 순서입니다</p></div>';
+    html += `<div style="display:flex;gap:8px"><button class="btn btn-green" style="flex:1" onclick="saveMatch()">${state.editId ? '수정 완료' : '경기 저장'}</button>`;
+    if (state.editId) html += `<button class="btn btn-gray" style="flex:0.5" onclick="cancelEdit()">취소</button>`;
+    html += '</div>';
+  }
+
+  // Tab 1: 경기 기록
+  if (state.tab === 1) {
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="font-size:16px;font-weight:700">경기 기록</h2>${sorted.length ? `<span style="font-size:12px;color:#6b7280">총 ${sorted.length}경기</span>` : ''}</div>`;
+    if (!sorted.length) { html += '<div class="card empty">아직 기록된 경기가 없습니다</div>'; }
+    else {
+      html += '<div class="card"><div style="display:flex;padding:0 0 8px;border-bottom:2px solid #e5e7eb;font-size:12px;font-weight:600;color:#6b7280"><div style="width:90px">날짜</div><div style="flex:1">순위</div><div style="width:80px;text-align:right"></div></div>';
+      paged.forEach(m => {
+        const ranked = m.rankings.slice().sort((a, b) => a.rank - b.rank);
+        html += `<div class="match-row"><div class="match-date">${m.date}</div><div class="match-ranks">${ranked.map(r => `<span>${REMOJI[r.rank]}${esc(r.name)}</span>`).join(' ')}</div><div class="match-btns"><button class="btn-sm" style="background:#3b82f6" onclick="editMatch(${m.id})">수정</button><button class="btn-sm" style="background:#ef4444" onclick="askDelete(${m.id})">삭제</button></div></div>`;
+      });
+      html += '</div>';
+      if (totalPages > 1) {
+        html += `<div class="pager"><button ${cp === 1 ? 'disabled' : ''} onclick="set({page:${cp - 1}})">◀ 이전</button><span style="font-size:13px;color:#6b7280">${cp} / ${totalPages}</span><button ${cp === totalPages ? 'disabled' : ''} onclick="set({page:${cp + 1}})">다음 ▶</button></div>`;
+      }
+    }
+  }
+
+  // Tab 2: 통계
+  if (state.tab === 2) {
+    html += '<h2 style="font-size:16px;font-weight:700;margin-bottom:16px">개인 통계</h2>';
+    if (!ap.length) { html += '<div class="card empty">경기를 먼저 등록해주세요</div>'; }
+    else {
+      html += '<div class="card"><div style="overflow-x:auto"><table><thead><tr><th style="text-align:left">이름</th><th>경기</th><th style="color:#eab308">🥇</th><th style="color:#94a3b8">🥈</th><th style="color:#c2703e">🥉</th><th style="color:#16a34a;font-weight:600">승</th><th style="color:#ef4444;font-weight:600">패</th><th style="font-weight:600">승률</th></tr></thead><tbody>';
+      sp.forEach((p, idx) => {
+        const s = stats[p];
+        html += `<tr style="background:${idx === 0 ? '#fefce8' : 'transparent'}"><td>${esc(p)}</td><td>${s.games}</td><td style="font-weight:600">${s.r1 || '-'}</td><td>${s.r2 || '-'}</td><td>${s.r3 || '-'}</td><td style="color:#16a34a;font-weight:600">${s.wins}</td><td style="color:#ef4444;font-weight:600">${s.losses}</td><td>${winRate(s.wins, s.losses, s.draws)}</td></tr>`;
+      });
+      html += '</tbody></table></div></div>';
+
+      if (h2hAll.length) {
+        html += '<h2 style="font-size:16px;font-weight:700;margin:20px 0 0">1:1 전적</h2><div class="subtabs">';
+        h2hTabs.forEach((t, i) => { html += `<button class="${h2hSel === i ? 'active' : ''}" onclick="set({h2hTab:${i}})">${t}</button>`; });
+        html += '</div>';
+        if (!h2hData.length) { html += `<div class="card empty">${h2hSelLabel === '총 전적' ? '전적이 없습니다' : h2hSelLabel + '년 전적이 없습니다'}</div>`; }
+        else h2hData.forEach(h => {
+          const total = h.p1w + h.p2w + h.draw, p1r = total ? ((h.p1w / total) * 100).toFixed(0) : 0, p2r = total ? ((h.p2w / total) * 100).toFixed(0) : 0;
+          html += `<div class="card" style="padding:14px"><div class="h2h-card"><div class="h2h-side"><div style="font-weight:700;font-size:15px;color:${h.p1w > h.p2w ? '#16a34a' : h.p1w < h.p2w ? '#9ca3af' : '#374151'}">${esc(h.p1)}</div><div style="font-size:24px;font-weight:800;color:${h.p1w > h.p2w ? '#16a34a' : '#374151'}">${h.p1w}</div></div><div class="h2h-vs">VS${h.draw ? `<div style="font-size:11px;color:#9ca3af">무 ${h.draw}</div>` : ''}</div><div class="h2h-side"><div style="font-weight:700;font-size:15px;color:${h.p2w > h.p1w ? '#16a34a' : h.p2w < h.p1w ? '#9ca3af' : '#374151'}">${esc(h.p2)}</div><div style="font-size:24px;font-weight:800;color:${h.p2w > h.p1w ? '#16a34a' : '#374151'}">${h.p2w}</div></div></div><div class="bar-wrap"><span style="color:${h.p1w >= h.p2w ? '#16a34a' : '#9ca3af'};font-weight:600;width:36px;text-align:right">${p1r}%</span><div class="bar-track"><div style="width:${p1r}%;background:#16a34a;border-radius:3px 0 0 3px"></div><div style="width:${p2r}%;background:#3b82f6;border-radius:0 3px 3px 0;margin-left:auto"></div></div><span style="color:${h.p2w >= h.p1w ? '#3b82f6' : '#9ca3af'};font-weight:600;width:36px">${p2r}%</span></div><div style="text-align:center;font-size:11px;color:#9ca3af;margin-top:4px">총 ${total}경기</div></div>`;
+        });
+      }
+    }
+  }
+
+  // Tab 3: 데이터 가져오기
+  if (state.tab === 3) {
+    html += '<h2 style="font-size:16px;font-weight:700;margin-bottom:16px">엑셀/CSV 데이터 가져오기</h2><div class="card">';
+    html += '<p style="font-size:13px;color:#6b7280;margin-bottom:12px;line-height:1.6">파일 형식: 첫 행에 헤더가 있어야 합니다.<br><strong>필수 열:</strong> 날짜, 1위, 2위<br><strong>선택 열:</strong> 3위, 4위</p>';
+    html += '<div class="file-example"><div style="color:#6b7280;margin-bottom:4px">예시:</div><div>날짜, 1위, 2위, 3위, 4위</div><div>2025-03-15, 김철수, 이영희, 박민수, 최지호</div></div>';
+    html += `<input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.txt" onchange="handleFile(event)" style="display:none"><button class="btn btn-blue" style="width:100%" onclick="document.getElementById('fileInput').click()" ${state.fileLoading ? 'disabled' : ''}>${state.fileLoading ? '⏳ 파일 읽는 중...' : '📂 파일 선택'}</button>`;
+    if (state.fileError) html += `<div class="error-box">⚠️ ${esc(state.fileError)}</div>`;
+    html += '</div>';
+
+    if (state.preview) {
+      html += `<div class="card"><h3 style="font-size:14px;font-weight:700;margin-bottom:12px">미리보기 (${state.preview.length}경기)</h3><div style="max-height:300px;overflow-y:auto">`;
+      state.preview.forEach(p => {
+        html += `<div style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px"><span style="color:#6b7280;margin-right:8px">${p.date}</span>${p.rankings.map(r => `<span style="margin-right:6px">${REMOJI[r.rank]} ${esc(r.name)}</span>`).join('')}</div>`;
+      });
+      html += `</div><div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" style="flex:1" onclick="confirmImport()">✅ ${state.preview.length}개 경기 등록</button><button class="btn btn-gray" style="flex:0.5" onclick="set({preview:null,importData:[]})">취소</button></div></div>`;
+    }
+
+    if (state.data.matches.length) {
+      html += '<div class="card" style="margin-top:16px"><h3 style="font-size:14px;font-weight:700;margin-bottom:8px;color:#ef4444">데이터 초기화</h3><p style="font-size:12px;color:#6b7280;margin-bottom:12px">모든 경기 기록을 삭제합니다.</p><button style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer" onclick="resetAll()">🗑 전체 삭제</button></div>';
+    }
+  }
+
+  html += '</div>';
+  document.getElementById('app').innerHTML = html;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function updateForm(key, val) { state.form[key] = val; render(); }
+function setCount(n) {
+  const r = [...state.form.rankings];
+  while (r.length < n) r.push({ name: "", rank: r.length + 1 });
+  state.form.count = n;
+  state.form.rankings = r.slice(0, n).map((x, i) => ({ ...x, rank: i + 1 }));
+  render();
+}
+function updateRankName(i, v) { state.form.rankings[i].name = v; render(); }
+
+function saveMatch() {
+  const f = state.form, rankings = f.rankings.slice(0, f.count);
+  if (rankings.some(r => !r.name.trim())) return alert("플레이어 이름을 모두 입력해주세요");
+  if (new Set(rankings.map(r => r.name.trim())).size !== rankings.length) return alert("플레이어 이름이 중복됩니다");
+  const match = { id: state.editId || Date.now(), date: f.date, rankings: rankings.map(r => ({ name: r.name.trim(), rank: r.rank })) };
+  if (state.editId) { state.data.matches = state.data.matches.map(m => m.id === state.editId ? match : m); state.editId = null; }
+  else state.data.matches.push(match);
+  state.form = emptyForm();
+  saveData(); render();
+  alert(state.editId ? "수정 완료!" : "경기 저장 완료!");
+}
+
+function editMatch(id) {
+  const m = state.data.matches.find(x => x.id === id); if (!m) return;
+  const rankings = [...m.rankings]; while (rankings.length < 4) rankings.push({ name: "", rank: rankings.length + 1 });
+  state.form = { date: m.date, count: m.rankings.length, rankings };
+  state.editId = id; state.tab = 0; render();
+}
+
+function askDelete(id) { state.deleteTarget = state.data.matches.find(m => m.id === id); render(); }
+function doDelete(id) { state.data.matches = state.data.matches.filter(m => m.id !== id); state.deleteTarget = null; saveData(); render(); }
+function cancelEdit() { state.editId = null; state.form = emptyForm(); render(); }
+function resetAll() { if (confirm("정말 모든 데이터를 삭제할까요?")) { state.data = { matches: [] }; saveData(); render(); } }
+
+function handleFile(e) {
+  const file = e.target.files?.[0]; if (!file) return;
+  state.fileError = ""; state.fileLoading = true; state.preview = null; state.importData = []; render();
+  const ext = file.name.split(".").pop().toLowerCase();
+  const reader = new FileReader();
+
+  if (ext === "csv" || ext === "txt") {
+    reader.onload = function (ev) {
+      let text = ev.target.result;
+      if (/[\ufffd]/.test(text)) {
+        const r2 = new FileReader();
+        r2.onload = function (ev2) {
+          const decoder = new TextDecoder("euc-kr");
+          text = decoder.decode(ev2.target.result);
+          parseCsv(text);
+        };
+        r2.readAsArrayBuffer(file);
+      } else parseCsv(text);
+    };
+    reader.readAsText(file);
+  } else if (ext === "xlsx" || ext === "xls") {
+    reader.onload = function (ev) {
+      try {
+        const data = new Uint8Array(ev.target.result);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: false });
+        parseRows(rows);
+      } catch (err) { state.fileError = "엑셀 파일 처리 중 오류: " + err.message; state.fileLoading = false; render(); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else { state.fileError = "CSV 또는 엑셀(.xlsx) 파일을 선택해주세요."; state.fileLoading = false; render(); }
+  e.target.value = "";
+}
+
+function parseCsv(text) {
+  const result = Papa.parse(text, { skipEmptyLines: true, delimitersToGuess: [",", "\t", ";", "|"] });
+  parseRows(result.data);
+}
+
+function parseRows(rows) {
+  state.fileLoading = false;
+  if (!rows || rows.length < 2) { state.fileError = "데이터가 없습니다"; render(); return; }
+  const header = rows[0].map(h => String(h ?? "").trim());
+  const di = header.findIndex(h => /날짜|date/i.test(h));
+  const r1 = header.findIndex(h => /1위|1st/i.test(h));
+  const r2 = header.findIndex(h => /2위|2nd/i.test(h));
+  const r3 = header.findIndex(h => /3위|3rd/i.test(h));
+  const r4 = header.findIndex(h => /4위|4th/i.test(h));
+  if (di < 0 || r1 < 0 || r2 < 0) { state.fileError = "헤더에 '날짜', '1위', '2위' 열이 필요합니다.\n인식된 헤더: " + header.join(", "); render(); return; }
+  const parsed = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i]; if (!row || !row[di]) continue;
+    let dv = row[di];
+    if (typeof dv === "number") { const d = new Date((dv - 25569) * 86400000); dv = d.toISOString().slice(0, 10); }
+    else { dv = String(dv).replace(/\./g, "-").replace(/\//g, "-").trim(); const pts = dv.split("-"); if (pts.length === 3) dv = `${pts[0].padStart(4, "20")}-${pts[1].padStart(2, "0")}-${pts[2].padStart(2, "0")}`; }
+    const rk = [];
+    const tryA = (idx, rank) => { if (idx >= 0 && row[idx] != null && String(row[idx]).trim()) rk.push({ name: String(row[idx]).trim(), rank }); };
+    tryA(r1, 1); tryA(r2, 2); tryA(r3, 3); tryA(r4, 4);
+    if (rk.length >= 2) parsed.push({ date: dv, rankings: rk });
+  }
+  if (!parsed.length) { state.fileError = "유효한 데이터가 없습니다"; render(); return; }
+  state.fileError = ""; state.importData = parsed; state.preview = parsed; render();
+}
+
+function confirmImport() {
+  const nm = state.importData.map((d, i) => ({ id: Date.now() + i, date: d.date, rankings: d.rankings }));
+  state.data.matches = [...state.data.matches, ...nm];
+  state.preview = null; state.importData = [];
+  saveData(); render();
+  alert(`${nm.length}개 경기가 등록되었습니다!`);
+}
+
+render();
+</script>
+</body>
+</html>
